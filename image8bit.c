@@ -26,18 +26,50 @@
 #include <stdlib.h>
 #include "instrumentation.h"
 
+int main() {
+    const char* filename = "trabalho1-103735-103353";  
+    Image* img = ReadImage8bit(filename);
+    if (img == NULL) {
+        fprintf(stderr, "Erro ao ler a imagem.\n");
+        return 1;
+    }
+
+    int width = img->width;
+    int height = img->height; // Two integers store the image width and height.
+
+    printf("Largura da imagem: %d\n", width);
+    printf("Altura da imagem: %d\n", height);
+
+    // Exemplo de acesso a um pixel na posição (x, y)
+    int x = 33;
+    int y = 44;
+    unsigned char pixel_value = GetPixel8bit(img, x, y);
+    printf("Pixel na posição (%d, %d) tem o valor: %d\n", x, y, pixel_value);
+
+    // Exemplo de modificação de um pixel na posição (x, y)
+    unsigned char new_pixel_value = 128;
+    SetPixel8bit(img, x, y, new_pixel_value);
+    printf("Pixel na posição (%d, %d) foi atualizado com o valor: %d\n", x, y, new_pixel_value);
+
+    // Salvar a imagem atualizada em um novo arquivo
+    const char* new_filename = "nova_imagem.bin";
+    if (WriteImage8bit(img, new_filename) != 0) {
+        fprintf(stderr, "Erro ao salvar a imagem.\n");
+        return 1;
+    }
+
+    DestroyImage8bit(img);
+
+    return 0;
+}
 // The data structure
 //
 // An image is stored in a structure containing 3 fields:
-// Two integers store the image width and height.
-// The other field is a pointer to an array that stores the 8-bit gray
+
 // level of each pixel in the image.  The pixel array is one-dimensional
 // and corresponds to a "raster scan" of the image from left to right,
 // top to bottom.
-// For example, in a 100-pixel wide image (img->width == 100),
-//   pixel position (x,y) = (33,0) is stored in img->pixel[33];
-//   pixel position (x,y) = (22,1) is stored in img->pixel[122].
-// 
+
 // Clients should use images only through variables of type Image,
 // which are pointers to the image structure, and should not access the
 // structure fields directly.
@@ -412,7 +444,13 @@ Image ImageRotate(Image img) { ///
 /// On failure, returns NULL and errno/errCause are set accordingly.
 Image ImageMirror(Image img) { ///
   assert (img != NULL);
-  // Insert your code here!
+  for (int y = 0; y < img->height; y++) {
+    for (int x = 0; x < img->width; x++) {
+        Pixel mirrored_pixel = img->pixels[y][x];
+        mirrored_img->pixels[y][img->width - x - 1] = mirrored_pixel;
+    }
+}
+return mirrored_img;
 }
 
 /// Crop a rectangular subimage from img.
@@ -430,7 +468,16 @@ Image ImageMirror(Image img) { ///
 Image ImageCrop(Image img, int x, int y, int w, int h) { ///
   assert (img != NULL);
   assert (ImageValidRect(img, x, y, w, h));
-  // Insert your code here!
+  Image *cropped_img = ImageCreate(w, h);
+for (int y = 0; y < h; y++) {
+    for (int x = 0; x < w; x++) {
+        Pixel cropped_pixel = img->pixels[y + y][x + x];
+        cropped_img->pixels[y][x] = cropped_pixel;
+    }
+}
+
+return cropped_img;
+  
 }
 
 
@@ -444,7 +491,12 @@ void ImagePaste(Image img1, int x, int y, Image img2) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   assert (ImageValidRect(img1, x, y, img2->width, img2->height));
-  // Insert your code here!
+  for (int y = 0; y < img2->height; y++) {
+    for (int x = 0; x < img2->width; x++) {
+        Pixel paste_pixel = img2->pixels[y][x];
+        img1->pixels[y + y][x + x] = paste_pixel;
+    }
+}
 }
 
 /// Blend an image into a larger image.
