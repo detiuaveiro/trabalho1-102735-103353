@@ -210,6 +210,7 @@ int main(int ac, char* av[]) {
       if (n >= N) { err = 3; break; }
       fprintf(stderr, "Loading %s -> I%d\n", av[k], n);
       img[n] = ImageLoad(av[k]);
+      printf("passei do load\n");
       if (img[n] == NULL) { err = 4; break; }
       n++;
     }
