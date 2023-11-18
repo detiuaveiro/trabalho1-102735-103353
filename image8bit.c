@@ -172,6 +172,14 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
   assert (height >= 0);
   assert (0 < maxval && maxval <= PixMax);
   // Insert your code here!
+  Image ret = (Image)malloc(sizeof(struct image));
+  if(ret == NULL) {
+	  errno = ENOMEM; //Será que deixo o próprio malloc definir o errno?
+	  errCause = "Falha ao alocar memória para a nova imagem\n";
+	  return NULL;
+  }
+  
+  return ret;
 }
 
 /// Destroy the image pointed to by (*imgp).
@@ -182,6 +190,8 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
 void ImageDestroy(Image* imgp) { ///
   assert (imgp != NULL);
   // Insert your code here!
+  free(*imgp);
+  *imgp = NULL;
 }
 
 
