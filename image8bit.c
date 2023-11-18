@@ -172,14 +172,26 @@ Image ImageCreate(int width, int height, uint8 maxval) { ///
   assert (height >= 0);
   assert (0 < maxval && maxval <= PixMax);
   // Insert your code here!
-  Image ret = (Image)malloc(sizeof(struct image));
-  if(ret == NULL) {
+  Image img = (Image)malloc(sizeof(struct image));
+  if(img == NULL) {
 	  errno = ENOMEM; //Será que deixo o próprio malloc definir o errno?
-	  errCause = "Falha ao alocar memória para a nova imagem\n";
+	  errCause = "Falha ao alocar memória para a nova imagem\n"; //Será que uso o check para definir o errCause?
 	  return NULL;
   }
   
-  return ret;
+  uint8* pixel = (uint8*)malloc(width*height);
+  if(pixel == NULL) {
+	  errno = ENOMEM; //Será que deixo o próprio malloc definir o errno?
+	  errCause = "Falha ao alocar memória para os píxeis da nova imagem\n"; //Será que uso o check para definir o errCause?
+	  return NULL;
+  }
+  
+  img->width = width;
+  img->height = height;
+  img->maxval = maxval;
+  img->pixel = pixel;
+  
+  return img;
 }
 
 /// Destroy the image pointed to by (*imgp).

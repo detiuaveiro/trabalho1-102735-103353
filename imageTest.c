@@ -19,13 +19,15 @@
 #include "instrumentation.h"
 
 int main(int argc, char* argv[]) {
+  setbuf(stdout, NULL);
+	
   if (argc != 3) {
     error(1, 0, "Usage: imageTest input.pgm output.pgm");
   }
 
   ImageInit();
   
-  printf("# LOAD image");
+  printf("# LOAD image\n");
   InstrReset(); // to reset instrumentation
   Image img1 = ImageLoad(argv[1]);
   if (img1 == NULL) {
