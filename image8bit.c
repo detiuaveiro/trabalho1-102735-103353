@@ -316,6 +316,33 @@ int ImageMaxval(Image img) { ///
 void ImageStats(Image img, uint8* min, uint8* max) { ///
   assert (img != NULL);
   // Insert your code here!
+  int img_size = img->width*img->height;
+  
+  //O que fazer se o tamanho da imagem for zero?
+  *min = *max = img->pixel[0];
+  
+  if(img_size == 1)
+	return;
+  
+  uint8 amin = *min, amax = *max;
+  for(int i = 1; i < img_size; i++) {
+	  if(img->pixel[i] < amin)
+		  amin = img->pixel[i];
+	  else if(img->pixel[i] > amax)
+		  amax = img->pixel[i];
+  }
+  //~ uint8 pix;
+  //~ for(int x = 0; x < img->width; x++) {
+	  //~ for(int y = 0; y < img->height; y++) {
+		  //~ pix = ImageGetPixel(img, x, y);
+	  	  //~ if(pix < amin)
+			//~ amin = pix;
+		  //~ else if(pix > amax)
+			//~ amax = pix;
+	  //~ }
+  //~ }
+  *min = amin;
+  *max = amax;
 }
 
 /// Check if pixel position (x,y) is inside img.
@@ -343,6 +370,7 @@ int ImageValidRect(Image img, int x, int y, int w, int h) { ///
 static inline int G(Image img, int x, int y) {
   int index;
   // Insert your code here!
+  index = y*img->width + x;
   assert (0 <= index && index < img->width*img->height);
   return index;
 }
