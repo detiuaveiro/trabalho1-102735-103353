@@ -355,6 +355,8 @@ int ImageValidPos(Image img, int x, int y) { ///
 int ImageValidRect(Image img, int x, int y, int w, int h) { ///
   assert (img != NULL);
   // Insert your code here!
+  //Se o canto inferior direito da área retangular estiver dentro da imagem, então toda a área retangular estará dentro da imagem
+  return(ImageValidPos(img, x+w-1, y+h-1));
 }
 
 /// Pixel get & set operations
@@ -484,6 +486,20 @@ Image ImageCrop(Image img, int x, int y, int w, int h) { ///
   assert (img != NULL);
   assert (ImageValidRect(img, x, y, w, h));
   // Insert your code here!
+  Image ret = ImageCreate(w, h, img->maxval);
+  if(ret == NULL) {
+	  errno = ENOMEM;
+	  errCause = "Falha ao alocar memória para a imagem resultante do crop\n";
+	  return NULL;
+  }
+  int i = 0;
+  for(int ay = y; ay < y+h; ay++) {
+	  for(int ax = x; ax < x+w; ax++) {
+		  ret->pixel[i++] = img->pixel[G(img, ax, ay)];
+	  }
+  }
+  
+  return ret;
 }
 
 
@@ -521,6 +537,23 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   assert (img2 != NULL);
   assert (ImageValidPos(img1, x, y));
   // Insert your code here!
+  //Se a imagem 2 nem couber dentro da 1 na posição desejada, não é match
+  if(!ImageValidRect(img1, x, y, img2->width, img2->height))
+	return 0;
+  
+  //Criar a sub-imagem para comparação
+  Image sub = ImageCrop(img1, x, y, img2->width, img2->height);
+  
+  //Comparar a imagem 2 com a sub-imagem
+  int match = 1;
+  for(int i = 0; i < sub->width*sub->height; i++) {
+	  if(img2->pixel[i] != sub->pixel[i]) {
+		  match = 0;
+		  break;
+	  }
+  }
+  
+  return match;
 }
 
 /// Locate a subimage inside another image.

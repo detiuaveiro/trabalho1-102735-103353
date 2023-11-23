@@ -206,6 +206,13 @@ int main(int ac, char* av[]) {
       if (n < 1) { err = 2; break; }
       fprintf(stderr, "Saving %s <- I%d\n", av[k], n-1);
       if (ImageSave(img[n-1], av[k]) == 0) { err = 4; break; }
+      //-----
+    } else if (strcmp(av[k], "match") == 0) {
+      if (++k >= ac) { err = 1; break; }
+      if (n < 1) { err = 2; break; }
+      if (sscanf(av[k], "%d,%d", &x, &y) != 2) { err = 5; break; }
+      printf("Match: %d\n", ImageMatchSubImage(img[n-2], x, y, img[n-1]));
+      //-----
     } else {  // image file
       if (n >= N) { err = 3; break; }
       fprintf(stderr, "Loading %s -> I%d\n", av[k], n);
