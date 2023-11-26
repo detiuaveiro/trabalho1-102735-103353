@@ -421,7 +421,7 @@ void ImageThreshold(Image img, uint8 thr) { ///
   assert (img != NULL);
     img->width = ImageWidth(img); //nao sei se aqui é assim ou int width
     img->height = ImageHeight(img);
-    img->maxval = ImageMaxVal(img);
+    img->maxval = ImageMaxval(img);
 
     for ( uint32_t  i = 0; i < img->height; i++) {
         for (uint32_t  j = 0; j < img->width; j++) {
@@ -517,8 +517,8 @@ Image ImageMirror(Image img) { ///
 	      errCause = "Falha ao alocar memória para a imagem resultante do crop\n";
         return NULL;
     }
-    for (int i = 0; i < img->height; i++) {
-        for (int j = 0; j < img->width; j++) {
+    for (uint32_t i = 0; i < img->height; i++) {
+        for (uint32_t j= 0; j < img->width; j++) {
 
             // coordenadas img 1(i, j)
             img->pixel = ImageGetPixel(img, i, j);
@@ -578,7 +578,7 @@ void ImagePaste(Image img1, int x, int y, Image img2) { ///
         for (int j = 0; j < img2->width; j++) {
 
             // Get the pixel value from the second image at coordinates (i, j)
-            Pixel pixel = ImageGetPixel(img2, i, j);
+           uint8_t pixel = ImageGetPixel(img2, i, j);
 
             // Set the pixel value at coordinates (x + j, y + i) in the first image to the pixel value from the second image
             ImageSetPixel(img1, x + j, y + i, pixel);
@@ -603,11 +603,11 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
         for (int j = 0; j < img2->width; j++) {
 
             //coordenadas da segunda img(i, j)
-            pixel pixel2 = ImageGetPixel(img2, i, j);
+            uint8_t pixel2 = ImageGetPixel(img2, i, j);
 
             //coordenadas da primeira img (x + j, y + i)
-            pixel pixel1 = ImageGetPixel(img1, x + j, y + i);
-            blendedPixel = BlendPixels(pixel1, pixel2, alpha);
+            uint8_t pixel1 = ImageGetPixel(img1, x + j, y + i);
+            uint8_t blendedPixel = BlendPixels(pixel1, pixel2, alpha);
 		
             //mudar coordenadas da 1  imagem (x + j, y + i) para "blended pixel value"
             ImageSetPixel(img1, x + j, y + i, blendedPixel);
