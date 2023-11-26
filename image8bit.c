@@ -574,7 +574,16 @@ void ImagePaste(Image img1, int x, int y, Image img2) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   assert (ImageValidRect(img1, x, y, img2->width, img2->height));
-  // Insert your code here!
+    for (int i = 0; i < img2->height; i++) {
+        for (int j = 0; j < img2->width; j++) {
+
+            // Get the pixel value from the second image at coordinates (i, j)
+            Pixel pixel = ImageGetPixel(img2, i, j);
+
+            // Set the pixel value at coordinates (x + j, y + i) in the first image to the pixel value from the second image
+            ImageSetPixel(img1, x + j, y + i, pixel);
+        }
+    }
 }
 
 /// Blend an image into a larger image.
@@ -587,7 +596,25 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   assert (ImageValidRect(img1, x, y, img2->width, img2->height));
-  // Insert your code here!
+    assert (ImageValidRect(img1, x, y, img2->width, img2->height));
+  
+    // Iterate over each pixel in the second image
+    for (int i = 0; i < img2->height; i++) {
+        for (int j = 0; j < img2->width; j++) {
+
+            // Get the pixel value from the second image at coordinates (i, j)
+             pixel2 = ImageGetPixel(img2, i, j);
+
+            // Get the pixel value from the first image at coordinates (x + j, y + i)
+            pixel1 = ImageGetPixel(img1, x + j, y + i);
+
+            // Perform a weighted blend of the pixel values from the two images based on the alpha value
+            blendedPixel = BlendPixels(pixel1, pixel2, alpha);
+
+            // Set the pixel value at coordinates (x + j, y + i) in the first image to the blended pixel value
+            ImageSetPixel(img1, x + j, y + i, blendedPixel);
+        }
+    }
 }
 
 /// Compare an image to a subimage of a larger image.
