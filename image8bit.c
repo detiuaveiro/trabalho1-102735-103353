@@ -520,10 +520,10 @@ Image ImageMirror(Image img) { ///
     for (int i = 0; i < img->height; i++) {
         for (int j = 0; j < img->width; j++) {
 
-            // Get the pixel value from the original image at coordinates (i, j)
+            // coordenadas img 1(i, j)
             img->pixel = ImageGetPixel(img, i, j);
 
-            // Set the pixel value at coordinates (j, i) in the mirrored image to the pixel value from the original image
+            // mudar as coordenadas (j, i) na img espelhada para o pixel value da img original
             ImageSetPixel(mirrored_img, j, i, img->pixel);
         }
     }
@@ -602,16 +602,14 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
     for (int i = 0; i < img2->height; i++) {
         for (int j = 0; j < img2->width; j++) {
 
-            // Get the pixel value from the second image at coordinates (i, j)
-             pixel2 = ImageGetPixel(img2, i, j);
+            //coordenadas da segunda img(i, j)
+            pixel pixel2 = ImageGetPixel(img2, i, j);
 
-            // Get the pixel value from the first image at coordinates (x + j, y + i)
-            pixel1 = ImageGetPixel(img1, x + j, y + i);
-
-            // Perform a weighted blend of the pixel values from the two images based on the alpha value
+            //coordenadas da primeira img (x + j, y + i)
+            pixel pixel1 = ImageGetPixel(img1, x + j, y + i);
             blendedPixel = BlendPixels(pixel1, pixel2, alpha);
-
-            // Set the pixel value at coordinates (x + j, y + i) in the first image to the blended pixel value
+		
+            //mudar coordenadas da 1  imagem (x + j, y + i) para "blended pixel value"
             ImageSetPixel(img1, x + j, y + i, blendedPixel);
         }
     }
