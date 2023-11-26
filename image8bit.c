@@ -418,7 +418,22 @@ void ImageNegative(Image img) { ///
 /// all pixels with level>=thr to white (maxval).
 void ImageThreshold(Image img, uint8 thr) { ///
   assert (img != NULL);
-  // Insert your code here!
+  assert (img != NULL);
+    img->width = ImageWidth(img); //nao sei se aqui é assim ou int width
+    img->height = ImageHeight(img);
+    img->maxval = ImageMaxVal(img);
+
+    for ( uint32_t  i = 0; i < img->height; i++) {
+        for (uint32_t  j = 0; j < img->width; j++) {
+            uint8 pixel = ImageGetPixel(img, j, i);
+
+            if (pixel < thr) {
+                ImageSetPixel(img, j, i, 0);
+            } else {
+                ImageSetPixel(img, j, i, img->maxval);
+            }
+        }
+    }
 }
 
 /// Brighten image by a factor.
@@ -427,8 +442,20 @@ void ImageThreshold(Image img, uint8 thr) { ///
 /// darken the image if factor<1.0.
 void ImageBrighten(Image img, double factor) { ///
   assert (img != NULL);
-  // ? assert (factor >= 0.0);
-  // Insert your code here!
+   assert (factor >= 0.0);
+  
+    for (uint32_t i = 0; i < img->height; i++) {
+        for (uint32_t j = 0; j < img->width; j++) {
+            uint8_t pixel = ImageGetPixel(img, j, i);
+            uint8_t brightenedPixel = (uint8_t)((double)pixel * factor);
+
+            if (brightenedPixel > img->maxval) {
+                brightenedPixel = img->maxval;
+            }
+
+            ImageSetPixel(img, j, i, brightenedPixel);
+        }
+    }
 }
 
 
@@ -455,7 +482,24 @@ void ImageBrighten(Image img, double factor) { ///
 /// On failure, returns NULL and errno/errCause are set accordingly.
 Image ImageRotate(Image img) { ///
   assert (img != NULL);
-  // Insert your code here!
+   int width =ImageWidth(img);
+  int height = ImageHeight(img);
+
+  Image rotated_img = ImageCreate(height, width, ImageMaxval(img));//nao tenho certeza deste ImageMaxval(img)
+  if (!rotated_img) return NULL; // error already set
+   if(rotated_img= NULL){
+      errno = ENOMEM;
+	    errCause = "Falha ao alocar memória para a imagem resultante do crop\n";
+      return NULL;
+   }
+   for (int i = 0; i < width; ++i) {
+    for(int j = 0; j < height; ++j){
+      int rotated_i = j;
+      int rotated_j = width -1 -i;
+      ImageSetPixel(rotated_img, rotated_i,rotated_j, ImageGetPixel(img, i, j));
+    }
+   }
+   return rotated_img;
 }
 
 /// Mirror an image = flip left-right.
@@ -467,7 +511,24 @@ Image ImageRotate(Image img) { ///
 /// On failure, returns NULL and errno/errCause are set accordingly.
 Image ImageMirror(Image img) { ///
   assert (img != NULL);
-  // Insert your code here!
+   Image mirrored_img = ImageCreate(img->width, img->height, img->maxval);
+    if (mirrored_img == NULL) {
+        errno = ENOMEM;
+	      errCause = "Falha ao alocar memória para a imagem resultante do crop\n";
+        return NULL;
+    }
+    for (int i = 0; i < img->height; i++) {
+        for (int j = 0; j < img->width; j++) {
+
+            // Get the pixel value from the original image at coordinates (i, j)
+            img->pixel = ImageGetPixel(img, i, j);
+
+            // Set the pixel value at coordinates (j, i) in the mirrored image to the pixel value from the original image
+            ImageSetPixel(mirrored_img, j, i, img->pixel);
+        }
+    }
+
+    return mirrored_img;
 }
 
 /// Crop a rectangular subimage from img.
