@@ -610,23 +610,23 @@ void ImageBlend(Image img1, int x, int y, Image img2, double alpha) { ///
   assert (img1 != NULL);
   assert (img2 != NULL);
   assert (ImageValidRect(img1, x, y, img2->width, img2->height));
-    assert (ImageValidRect(img1, x, y, img2->width, img2->height));
+    //~ assert (ImageValidRect(img1, x, y, img2->width, img2->height));
   
-    // Iterate over each pixel in the second image
-    for (int i = 0; i < img2->height; i++) {
-        for (int j = 0; j < img2->width; j++) {
+    //~ // Iterate over each pixel in the second image
+    //~ for (int i = 0; i < img2->height; i++) {
+        //~ for (int j = 0; j < img2->width; j++) {
 
-            //coordenadas da segunda img(i, j)
-            uint8_t pixel2 = ImageGetPixel(img2, i, j);
+            //~ //coordenadas da segunda img(i, j)
+            //~ uint8_t pixel2 = ImageGetPixel(img2, i, j);
 
-            //coordenadas da primeira img (x + j, y + i)
-            uint8_t pixel1 = ImageGetPixel(img1, x + j, y + i);
-            uint8_t blendedPixel = BlendPixels(pixel1, pixel2, alpha);
+            //~ //coordenadas da primeira img (x + j, y + i)
+            //~ uint8_t pixel1 = ImageGetPixel(img1, x + j, y + i);
+            //~ uint8_t blendedPixel = BlendPixels(pixel1, pixel2, alpha);
 		
-            //mudar coordenadas da 1  imagem (x + j, y + i) para "blended pixel value"
-            ImageSetPixel(img1, x + j, y + i, blendedPixel);
-        }
-    }
+            //~ //mudar coordenadas da 1  imagem (x + j, y + i) para "blended pixel value"
+            //~ ImageSetPixel(img1, x + j, y + i, blendedPixel);
+        //~ }
+    //~ }
 }
 
 /// Compare an image to a subimage of a larger image.
