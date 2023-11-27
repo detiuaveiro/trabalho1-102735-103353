@@ -160,6 +160,7 @@ void ImageInit(void) { ///
 
 // TIP: Search for PIXMEM or InstrCount to see where it is incremented!
 
+//Para arredondar os píxeis desfocados para o uint8 mais próximo em vez de truncar.
 int arred(float f) {
 	int i = 0;
 	while(f >= 1) {
@@ -341,6 +342,7 @@ void ImageStats(Image img, uint8* min, uint8* max) { ///
   if(img_size == 1)
 	return;
   
+  //Achar os píxeis de valor mínimo e máximo
   uint8 amin = *min, amax = *max;
   for(int i = 1; i < img_size; i++) {
 	  if(img->pixel[i] < amin)
@@ -348,16 +350,7 @@ void ImageStats(Image img, uint8* min, uint8* max) { ///
 	  else if(img->pixel[i] > amax)
 		  amax = img->pixel[i];
   }
-  //~ uint8 pix;
-  //~ for(int x = 0; x < img->width; x++) {
-	  //~ for(int y = 0; y < img->height; y++) {
-		  //~ pix = ImageGetPixel(img, x, y);
-	  	  //~ if(pix < amin)
-			//~ amin = pix;
-		  //~ else if(pix > amax)
-			//~ amax = pix;
-	  //~ }
-  //~ }
+  
   *min = amin;
   *max = amax;
 }
@@ -511,6 +504,8 @@ Image ImageCrop(Image img, int x, int y, int w, int h) { ///
 	  errCause = "Falha ao alocar memória para a imagem resultante do crop\n";
 	  return NULL;
   }
+  
+  //Copiar os píxeis da zona adequada de img para a nova imagem
   for(int ay = y; ay < y+h; ay++) {
 	  for(int ax = x; ax < x+w; ax++) {
 		  //~ ret->pixel[i++] = img->pixel[G(img, ax, ay)];
@@ -591,6 +586,7 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
   
   for(int y = 0; y <= img1->height-img2->height; y++) {
 	  for(int x = 0; x <= img1->width-img2->width; x++) {
+		  //Para cada píxel de img1, ver se a subimagem que nele começa e tem as dimensões de img2 é igual a img2
 		  if(ImageMatchSubImage(img1, x, y, img2)) {
 			  *px = x;
 			  *py = y;
@@ -609,23 +605,29 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
 /// Each pixel is substituted by the mean of the pixels in the rectangle
 /// [x-dx, x+dx]x[y-dy, y+dy].
 /// The image is changed in-place.
+//Tabela que para cada píxel (x, y) associa a soma dos valores de todos os píxeis do retângulo que vai de (0, 0)  a (x, y)
 unsigned long int* build_summed_area_table(Image img) {
 	//Pode produzir erros
 	unsigned long int* table = (unsigned long int*)malloc(img->width*img->height*sizeof(unsigned long int));
 	
 	for(int y = 0; y < img->height; y++) {
 		for(int x = 0; x < img->width; x++) {
+			//Primeira linha ou coluna
 			if((y == 0) || (x == 0)) {
+				//Primeiro píxel
 				if((y == 0) && (x == 0)) {
 					table[G(img, x, y)] = ImageGetPixel(img, x, y);
 				}
+				//Primeira linha
 				else if(y == 0) {
 					table[G(img, x, 0)] = table[G(img, x-1, 0)] + ImageGetPixel(img, x, 0);
 				}
+				//Primeira coluna
 				else {
 					table[G(img, 0, y)] = table[G(img, 0, y-1)] + ImageGetPixel(img, 0, y);
 				}
 			}
+			//Demais píxeis
 			else {
 				table[G(img, x, y)] = table[G(img, x-1, y)] + table[G(img, x, y-1)] - table[G(img, x-1, y-1)] + ImageGetPixel(img, x, y);
 			}
@@ -644,12 +646,15 @@ void ImageBlur_naive_sem_borda(Image img, int dx, int dy) { ///
   float valor;
   for(int y = dy; y < img->height-dy; y++) {
 	  for(int x = dx; x < img->width-dx; x++) {
+		  //Para cada pixel da imagem (somente os que causam a janela a ficar dentro da imagem)
 		  soma = 0;
 		  for(int i = y-dy; i <= y+dy; i++) {
 			  for(int j = x-dx; j <= x+dx; j++) {
+				  //Somar os valores dos pixeis da janela
 				  soma += ImageGetPixel(img_cpy, j, i);
 			  }
 		  }
+		  //Dividir pelo número de píxeis da janela
 		  valor = (float)soma / ((2*dx+1)*(2*dy+1));
 		  ImageSetPixel(img, x, y, (uint8)arred(valor));
 	  }
@@ -663,6 +668,7 @@ void ImageBlur_opt(Image img, int dx, int dy) {
   int window_height = 2*dy+1;
   int window_area = window_width*window_height;
   
+  //Para cada tamanho possível da janela, um fator multiplicativo diferente (está assim para não dividir dentro do ciclo)
   float fator[window_area];
   for(int i = 0; i < window_area; fator[i++] = 1.0/(i+1));
   
@@ -677,32 +683,44 @@ void ImageBlur_opt(Image img, int dx, int dy) {
   //~ }
   
   for(int y = 0; y < img->height; y++) {
+	  //Limites da janela
 	  int yt = (y-dy) < 0 ? 0:(y-dy);
 	  int yb = (y+dy) > (img->height-1) ? (img->height-1):(y+dy);
 	  int cw_height = yb-yt+1;
 	  
 	  for(int x = 0; x < img->width; x++) {
+		  //Para cada píxel da imagem
+		  //Limites da janela (interseção da janela (dx x dy) com a imagem)
 		  int xl = (x-dx) < 0 ? 0:(x-dx);
 		  int xr = (x+dx) > (img->width-1) ? (img->width-1):(x+dx);
 		  int cw_width = xr-xl+1;
+		  
+		  //Fator para esta janela (interseção da janela (dx x dy) com a imagem)
 		  int cw_area = cw_width*cw_height;
 		  float cw_fator = fator[cw_area-1];
 		  
+		  //Cálculo da soma dos valores dos píxeis da interseção da janela com a imagem
+		  //Interseção da janela com a imagem toca a margem esquerda ou superior da imagem
 		  if((xl == 0) || (yt == 0)) {
+			  //Interseção da janela com a imagem toca o canto superior esquerdo da imagem
 			  if((xl == 0) && (yt == 0)) {
 				  valor = summed_area_table[G(img, xr, yb)];
 			  }
+			  //Interseção da janela com a imagem toca a margem superior, mas não a esquerda da imagem
 			  else if(xl > 0) {
 				  valor = summed_area_table[G(img, xr, yb)] - summed_area_table[G(img, xl-1, yb)];
 			  }
+			  //Interseção da janela com a imagem toca a margem esquerda, mas não a superior da imagem
 			  else {
 				  valor = summed_area_table[G(img, xr, yb)] - summed_area_table[G(img, xr, yt-1)];
 			  }
 		  }
+		  //Janela não toca a margem esquerda nem superior da imagem
 		  else {
 			  valor = summed_area_table[G(img, xr, yb)] - summed_area_table[G(img, xl-1, yb)] - summed_area_table[G(img, xr, yt-1)] + summed_area_table[G(img, xl-1, yt-1)];
 		  }
 		  
+		  //Média dos valores somados
 		  ImageSetPixel(img, x, y, (uint8)arred(valor*cw_fator));
 		  
 		  //~ printf("(%d, %d):\n %ld\t%ld\n%ld\t%ld\n\n%f -> %d\n\n\n", x, y, summed_area_table[G(img, x-dx-1, y-dy-1)], summed_area_table[G(img, x+dx, y-dy-1)], summed_area_table[G(img, x-dx-1, y+dy)], summed_area_table[G(img, x+dx, y+dy)], valor, (uint8)arred(valor*cw_fator));
