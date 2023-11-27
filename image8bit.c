@@ -511,10 +511,10 @@ Image ImageCrop(Image img, int x, int y, int w, int h) { ///
 	  errCause = "Falha ao alocar memória para a imagem resultante do crop\n";
 	  return NULL;
   }
-  int i = 0;
   for(int ay = y; ay < y+h; ay++) {
 	  for(int ax = x; ax < x+w; ax++) {
-		  ret->pixel[i++] = img->pixel[G(img, ax, ay)];
+		  //~ ret->pixel[i++] = img->pixel[G(img, ax, ay)];
+		  ImageSetPixel(ret, ax, ay, ImageGetPixel(img, ax, ay));
 	  }
   }
   
@@ -565,13 +565,14 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   
   //Comparar a imagem 2 com a sub-imagem
   int match = 1;
-  for(int i = 0; i < sub->width*sub->height; i++) {
-	  if(img2->pixel[i] != sub->pixel[i]) {
-		  match = 0;
-		  break;
+    for(int ay = y; ay < y+img2->height; ay++) {
+	  for(int ax = x; ax < x+img1->width; ax++) {
+		  if(ImageGetPixel(img2, ax, ay) != ImageGetPixel(sub, ax, ay)) {
+			  match = 0;
+			  break;
+		  }
 	  }
-  }
-  
+    }
   return match;
 }
 
@@ -608,29 +609,6 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
 /// Each pixel is substituted by the mean of the pixels in the rectangle
 /// [x-dx, x+dx]x[y-dy, y+dy].
 /// The image is changed in-place.
-//~ long int summed_area(Image img, long int* table_cache, int x, int y) {
-  //~ if(table_cache[G(img, x, y)] != -1) {
-	  //~ return table_cache[G(img, x, y)];
-  //~ }
-  
-  //~ long int ret = 0;
-  //~ if((x ==0) && (y == 0)) {
-	  //~ ret = ImageGetPixel(img, 0, 0);
-  //~ }
-  //~ else if(y == 0) {
-	  //~ ret = summed_area(img, table_cache, x-1, 0) + ImageGetPixel(img, x, 0);
-  //~ }
-  //~ else if(x == 0) {
-	  //~ ret = summed_area(img, table_cache, 0, y-1) + ImageGetPixel(img, 0, y);
-  //~ }
-  //~ else {
-	//~ ret = summed_area(img, table_cache, x-1, y) + summed_area(img, table_cache, x, y-1) - summed_area(img, table_cache, x-1, y-1) + ImageGetPixel(img, x, y);
-  //~ }
-  
-  //~ table_cache[G(img, x, y)] = ret;
-  //~ return ret;
-//~ }
-
 unsigned long int* build_summed_area_table(Image img) {
 	//Pode produzir erros
 	unsigned long int* table = (unsigned long int*)malloc(img->width*img->height*sizeof(unsigned long int));
@@ -680,72 +658,7 @@ void ImageBlur_naive_sem_borda(Image img, int dx, int dy) { ///
   ImageDestroy(&img_cpy);
 }
 
-//~ void ImageBlur_opt1_sem_borda(Image img, int dx, int dy) { ///
-  //~ // Insert your code here!
-  //~ int window_width = 2*dx+1;
-  //~ int window_height = 2*dy+1;
-  //~ int window_size = window_width*window_height;
-  //~ float fator = 1.0/window_size;
-  
-  //~ float lin[img->height];
-  //~ float col[img->width];
-  //~ for(int i = 0; i < img->height; lin[i++] = 0);
-  //~ for(int j = 0; j < img->width; col[j++] = 0);
-  //~ uint8 lido;
-  //~ float lido_avg;
-  //~ float valor = 0;
-  //~ float first = 0;
-  
-  //~ //Clonar a imagem
-  //~ Image img_cpy = ImageCrop(img, 0, 0, img->width, img->height);
-  
-  //~ for(int y = dy; y < img->height-dy; y++) {
-	//~ for(int x = dx; x < img->width-dx; x++) {
-		//~ if(x == dx) {
-			//~ if(y == dy) {
-				//~ //Primeiro pixel da primeira linha
-				
-				//~ //Percorrer a janela horizontalmente
-				//~ for(int i = 0; i <= 2*dy; i++) {
-					//~ for(int j = 0; j <= 2*dx; j++) {
-						//~ lido = ImageGetPixel(img_cpy, j, i);
-						//~ lin[i] += lido*fator;
-						//~ col[j] += lido*fator;
-					//~ }
-					//~ valor += lin[i];
-				//~ }
-				//~ first = valor;
-				//~ ImageSetPixel(img, dx, dy, (uint8)arred(valor));
-			//~ }
-			//~ else {
-				//~ //Primeiro pixel de uma outra linha
-				//~ for(int j = 0; j <= 2*dx; j++) {
-					//~ lido = ImageGetPixel(img_cpy, j, y+dy);
-					//~ lin[y+dy] += lido;
-				//~ }
-				//~ lin[y+dy] *= fator;
-				//~ valor = first - lin[y-1-dy] + lin[y+dy];
-				//~ first = valor;
-				//~ ImageSetPixel(img, dx, y, (uint8)arred(valor));
-			//~ }
-		//~ }
-		//~ else {
-			//~ //Outros pixeis
-			//~ for(int i = y-dy; i <= y+dy; i++) {
-				//~ lido = ImageGetPixel(img_cpy, x+dx, i);
-				//~ col[x+dx] += lido;
-			//~ }
-			//~ col[x+dx] *= fator;
-			//~ valor = valor - col[x-1-dx] + col[x+dx];
-			//~ ImageSetPixel(img, x, y, (uint8)arred(valor));
-		//~ }
-	//~ }
-  //~ }
-  
-  //~ ImageDestroy(&img_cpy);
-//~ }
-
-void ImageBlur_opt2_sem_borda(Image img, int dx, int dy) {
+void ImageBlur_opt(Image img, int dx, int dy) {
   int window_width = 2*dx+1;
   int window_height = 2*dy+1;
   int window_area = window_width*window_height;
@@ -827,8 +740,7 @@ void ImageBlur_opt2_sem_borda(Image img, int dx, int dy) {
 void ImageBlur(Image img, int dx, int dy) { ///
   // Insert your code here!
   //~ ImageBlur_naive_sem_borda(img, dx, dy);
-  //~ ImageBlur_opt1_sem_borda(img, dx, dy);
-  ImageBlur_opt2_sem_borda(img, dx, dy);
+  ImageBlur_opt(img, dx, dy);
   
 }
 
