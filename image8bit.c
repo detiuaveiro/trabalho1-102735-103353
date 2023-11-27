@@ -147,14 +147,31 @@ void ImageInit(void) { ///
   InstrCalibrate();
   InstrName[0] = "pixmem";  // InstrCount[0] will count pixel array acesses
   // Name other counters here...
+  InstrName[1] = "pixel reads";
+  InstrName[2] = "pixel writes";
   
 }
 
 // Macros to simplify accessing instrumentation counters:
 #define PIXMEM InstrCount[0]
 // Add more macros here...
+#define PIXRD InstrCount[1]
+#define PIXWR InstrCount[2]
 
 // TIP: Search for PIXMEM or InstrCount to see where it is incremented!
+
+int arred(float f) {
+	int i = 0;
+	while(f >= 1) {
+		f--;
+		i++;
+	}
+	if(f >= 0.5) {
+		i++;
+	}
+	
+	return i;
+}
 
 
 /// Image management functions
@@ -382,6 +399,7 @@ uint8 ImageGetPixel(Image img, int x, int y) { ///
   assert (img != NULL);
   assert (ImageValidPos(img, x, y));
   PIXMEM += 1;  // count one pixel access (read)
+  PIXRD++;
   return img->pixel[G(img, x, y)];
 } 
 
@@ -390,6 +408,7 @@ void ImageSetPixel(Image img, int x, int y, uint8 level) { ///
   assert (img != NULL);
   assert (ImageValidPos(img, x, y));
   PIXMEM += 1;  // count one pixel access (store)
+  PIXWR++;
   img->pixel[G(img, x, y)] = level;
 } 
 
@@ -553,10 +572,10 @@ Image ImageCrop(Image img, int x, int y, int w, int h) { ///
 	  errCause = "Falha ao alocar memória para a imagem resultante do crop\n";
 	  return NULL;
   }
-  int i = 0;
   for(int ay = y; ay < y+h; ay++) {
 	  for(int ax = x; ax < x+w; ax++) {
-		  ret->pixel[i++] = img->pixel[G(img, ax, ay)];
+		  //~ ret->pixel[i++] = img->pixel[G(img, ax, ay)];
+		  ImageSetPixel(ret, ax, ay, ImageGetPixel(img, ax, ay));
 	  }
   }
   
@@ -632,13 +651,14 @@ int ImageMatchSubImage(Image img1, int x, int y, Image img2) { ///
   
   //Comparar a imagem 2 com a sub-imagem
   int match = 1;
-  for(int i = 0; i < sub->width*sub->height; i++) {
-	  if(img2->pixel[i] != sub->pixel[i]) {
-		  match = 0;
-		  break;
+    for(int ay = y; ay < y+img2->height; ay++) {
+	  for(int ax = x; ax < x+img1->width; ax++) {
+		  if(ImageGetPixel(img2, ax, ay) != ImageGetPixel(sub, ax, ay)) {
+			  match = 0;
+			  break;
+		  }
 	  }
-  }
-  
+    }
   return match;
 }
 
@@ -675,7 +695,138 @@ int ImageLocateSubImage(Image img1, int* px, int* py, Image img2) { ///
 /// Each pixel is substituted by the mean of the pixels in the rectangle
 /// [x-dx, x+dx]x[y-dy, y+dy].
 /// The image is changed in-place.
+unsigned long int* build_summed_area_table(Image img) {
+	//Pode produzir erros
+	unsigned long int* table = (unsigned long int*)malloc(img->width*img->height*sizeof(unsigned long int));
+	
+	for(int y = 0; y < img->height; y++) {
+		for(int x = 0; x < img->width; x++) {
+			if((y == 0) || (x == 0)) {
+				if((y == 0) && (x == 0)) {
+					table[G(img, x, y)] = ImageGetPixel(img, x, y);
+				}
+				else if(y == 0) {
+					table[G(img, x, 0)] = table[G(img, x-1, 0)] + ImageGetPixel(img, x, 0);
+				}
+				else {
+					table[G(img, 0, y)] = table[G(img, 0, y-1)] + ImageGetPixel(img, 0, y);
+				}
+			}
+			else {
+				table[G(img, x, y)] = table[G(img, x-1, y)] + table[G(img, x, y-1)] - table[G(img, x-1, y-1)] + ImageGetPixel(img, x, y);
+			}
+		}
+	}
+	
+	return table;
+}
+
+void ImageBlur_naive_sem_borda(Image img, int dx, int dy) { ///
+  // Insert your code here!
+  //Clonar imagem
+  Image img_cpy = ImageCrop(img, 0, 0, img->width, img->height);
+  
+  int soma;
+  float valor;
+  for(int y = dy; y < img->height-dy; y++) {
+	  for(int x = dx; x < img->width-dx; x++) {
+		  soma = 0;
+		  for(int i = y-dy; i <= y+dy; i++) {
+			  for(int j = x-dx; j <= x+dx; j++) {
+				  soma += ImageGetPixel(img_cpy, j, i);
+			  }
+		  }
+		  valor = (float)soma / ((2*dx+1)*(2*dy+1));
+		  ImageSetPixel(img, x, y, (uint8)arred(valor));
+	  }
+  }
+  
+  ImageDestroy(&img_cpy);
+}
+
+void ImageBlur_opt(Image img, int dx, int dy) {
+  int window_width = 2*dx+1;
+  int window_height = 2*dy+1;
+  int window_area = window_width*window_height;
+  
+  float fator[window_area];
+  for(int i = 0; i < window_area; fator[i++] = 1.0/(i+1));
+  
+  float valor;
+  unsigned long int* summed_area_table = build_summed_area_table(img);
+  
+  //~ for(int i = 0; i < img->height; i++) {
+	//~ for(int j = 0; j < img->width; j++) {
+		//~ printf("%ld ", summed_area_table[G(img, j, i)]);
+	//~ }
+	//~ printf("\n");
+  //~ }
+  
+  for(int y = 0; y < img->height; y++) {
+	  int yt = (y-dy) < 0 ? 0:(y-dy);
+	  int yb = (y+dy) > (img->height-1) ? (img->height-1):(y+dy);
+	  int cw_height = yb-yt+1;
+	  
+	  for(int x = 0; x < img->width; x++) {
+		  int xl = (x-dx) < 0 ? 0:(x-dx);
+		  int xr = (x+dx) > (img->width-1) ? (img->width-1):(x+dx);
+		  int cw_width = xr-xl+1;
+		  int cw_area = cw_width*cw_height;
+		  float cw_fator = fator[cw_area-1];
+		  
+		  if((xl == 0) || (yt == 0)) {
+			  if((xl == 0) && (yt == 0)) {
+				  valor = summed_area_table[G(img, xr, yb)];
+			  }
+			  else if(xl > 0) {
+				  valor = summed_area_table[G(img, xr, yb)] - summed_area_table[G(img, xl-1, yb)];
+			  }
+			  else {
+				  valor = summed_area_table[G(img, xr, yb)] - summed_area_table[G(img, xr, yt-1)];
+			  }
+		  }
+		  else {
+			  valor = summed_area_table[G(img, xr, yb)] - summed_area_table[G(img, xl-1, yb)] - summed_area_table[G(img, xr, yt-1)] + summed_area_table[G(img, xl-1, yt-1)];
+		  }
+		  
+		  ImageSetPixel(img, x, y, (uint8)arred(valor*cw_fator));
+		  
+		  //~ printf("(%d, %d):\n %ld\t%ld\n%ld\t%ld\n\n%f -> %d\n\n\n", x, y, summed_area_table[G(img, x-dx-1, y-dy-1)], summed_area_table[G(img, x+dx, y-dy-1)], summed_area_table[G(img, x-dx-1, y+dy)], summed_area_table[G(img, x+dx, y+dy)], valor, (uint8)arred(valor*cw_fator));
+		  //~ printf("(%d, %d):\n%f -> %d\t(fator = %f)\n\n\n", x, y, valor, (uint8)arred(valor*cw_fator), cw_fator);
+		  
+	  }
+  }
+
+  unsigned long int** p = &summed_area_table;
+  free(*p);
+  *p = NULL;
+	
+	
+  //~ long int* table_cache = (long int*)malloc(img->width*img->height*sizeof(long int));
+  //~ for(int i = 0; i < img->height; i++) {
+	  //~ for(int j = 0; j < img->width; j++) {
+		  //~ table_cache[G(img, j, i)] = -1;
+	  //~ }
+  //~ }
+  
+  //~ summed_area(img, table_cache, img->width-1, img->height-1);
+  //~ for(int i = 0; i < img->height; i++) {
+	  //~ for(int j = 0; j < img->width; j++) {
+		  //~ printf("%ld ", table_cache[G(img, j, i)]);
+	  //~ }
+	  //~ printf("\n");
+  //~ }
+  
+  //~ long int** p = &table_cache;
+  //~ free(*p);
+  //~ *p = NULL
+  
+}
+
 void ImageBlur(Image img, int dx, int dy) { ///
   // Insert your code here!
+  //~ ImageBlur_naive_sem_borda(img, dx, dy);
+  ImageBlur_opt(img, dx, dy);
+  
 }
 

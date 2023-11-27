@@ -19,6 +19,13 @@
 #include "image8bit.h"
 #include "instrumentation.h"
 
+//-----
+// Macros to simplify accessing instrumentation counters:
+#define PIXMEM InstrCount[0]
+#define PIXRD InstrCount[1]
+#define PIXWR InstrCount[2]
+//-----
+
 static const char* USAGE =
     "USAGE: imageTool [FILE...] [OPERATION [OPERAND...]]\n"
     "  Apply pipeline of image processing operations to PGM files.\n"
@@ -116,6 +123,9 @@ int main(int ac, char* av[]) {
       InstrReset();
     } else if (strcmp(av[k], "toc") == 0) {
       InstrPrint();
+      //-----
+      printf("pixel read/write ratio: %ld\n", PIXRD/PIXWR);
+      //-----
     } else if (strcmp(av[k], "neg") == 0) {
       if (n < 1) { err = 2; break; }
       fprintf(stderr, "Negating I%d\n", n-1);
