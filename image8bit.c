@@ -504,11 +504,11 @@ Image ImageRotate(Image img) { ///
    int width =ImageWidth(img);
   int height = ImageHeight(img);
 
-  Image rotated_img = ImageCreate(height, width, ImageMaxval(img));//nao tenho certeza deste ImageMaxval(img)
+  Image rotated_img = ImageCreate(height, width, img->maxval);
   if (!rotated_img) return NULL; // error already set
    if(rotated_img= NULL){
-      errno = ENOMEM;
-	    errCause = "Falha ao alocar memória para a imagem resultante do crop\n";
+      /*errno = ENOMEM;
+	    errCause = "Falha ao alocar memória para a imagem resultante do crop\n";*/
       return NULL;
    }
    for (int i = 0; i < width; ++i) {
@@ -568,8 +568,8 @@ Image ImageCrop(Image img, int x, int y, int w, int h) { ///
   // Insert your code here!
   Image ret = ImageCreate(w, h, img->maxval);
   if(ret == NULL) {
-	  errno = ENOMEM;
-	  errCause = "Falha ao alocar memória para a imagem resultante do crop\n";
+	  /*errno = ENOMEM;
+	  errCause = "Falha ao alocar memória para a imagem resultante do crop\n";*/
 	  return NULL;
   }
   for(int ay = y; ay < y+h; ay++) {
